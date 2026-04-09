@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle de Banheiro</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f4f0; --surface: #ffffff; --surface2: #f0efe9;
+      --border: #e2e0d8; --text: #1a1917; --text-muted: #78756e;
+      --accent: #2563eb; --accent-bg: #eff6ff; --accent-border: #bfdbfe;
+      --success: #16a34a; --success-bg: #f0fdf4; --success-border: #bbf7d0;
+      --warning-bg: #fffbeb; --warning-border: #fde68a; --warning: #b45309;
+      --danger: #dc2626; --danger-bg: #fef2f2; --danger-border: #fecaca;
+      --radius: 12px; --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .header-title { font-size: 15px; font-weight: 600; }
+    .header-sub { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+    .live-dot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; }
+    .dot.on { background: var(--success); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .main { max-width: 480px; margin: 0 auto; padding: 20px 16px 60px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .badge { font-size: 11px; font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; padding: 2px 8px; color: var(--text-muted); }
+    .slots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .slot { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .slot.empty { background: var(--surface2); }
+    .slot.occupied { background: var(--accent-bg); border-color: var(--accent-border); }
+    .slot-icon { font-size: 18px; margin-bottom: 4px; }
+    .slot-name { font-size: 13px; font-weight: 600; color: var(--accent); }
+    .slot-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .slot.empty .slot-hint { color: #c4c1b8; }
+    .queue-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .queue-item:last-child { border-bottom: none; }
+    .queue-pos { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-muted); min-width: 20px; }
+    .queue-name { font-size: 14px; font-weight: 500; flex: 1; }
+    .badge-waiting { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; background: var(--warning-bg); border: 1px solid var(--warning-border); color: var(--warning); }
+    .empty-state { text-align: center; padding: 20px 0; font-size: 13px; color: var(--text-muted); }
+    .my-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .my-bar-label { font-size: 11px; color: var(--text-muted); }
+    .my-bar-name { font-size: 15px; font-weight: 600; }
+    input[type="text"] { flex: 1; height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); outline: none; width: 100%; }
+    input[type="text"]:focus { border-color: var(--accent); background: var(--surface); }
+    .input-row { display: flex; gap: 8px; }
+    .btn { height: 40px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .btn:hover { background: var(--surface2); }
+    .btn:active { transform: scale(0.98); }
+    .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-accent:hover { background: #1d4ed8; }
+    .btn-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+    .btn-sm { height: 34px; padding: 0 12px; font-size: 13px; }
+    #loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; z-index: 100; }
+    .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { font-size: 13px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Conectando ao Firebase...</p>
+</div>
+
+<header>
+  <div>
+    <div class="header-title">Controle de Banheiro</div>
+    <div class="header-sub">Máx. 2 vagas simultâneas</div>
+  </div>
+  <div class="live-dot">
+    <div class="dot" id="conn-dot"></div>
+    <span id="conn-label">conectando</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="card" id="login-card">
+    <p style="font-size:16px;font-weight:600;margin-bottom:4px;">Olá! Qual é o seu nome?</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Digite seu nome para entrar no sistema.</p>
+    <div class="input-row">
+      <input type="text" id="name-input" placeholder="Seu nome..." maxlength="30" />
+      <button class="btn btn-accent" id="btn-entrar">Entrar</button>
+    </div>
+  </div>
+
+  <div class="my-bar" id="my-bar" style="display:none;">
+    <div>
+      <div class="my-bar-label">Você está logado como</div>
+      <div class="my-bar-name" id="my-bar-name"></div>
+    </div>
+    <div id="my-action"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      No banheiro agora
+      <span class="badge" id="slots-count">0 / 2</span>
+    </div>
+    <div class="slots-grid">
+      <div class="slot empty" id="slot-0"><div class="slot-icon">🚪</div><div class="slot-hint">Vaga livre</div></div>
+      <div class="slot empty" id="slot-1"><div class="slot-icon">🚪</div><div class="slot-hint">Vaga livre</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      Fila de espera
+      <span class="badge" id="queue-count">0 na fila</span>
+    </div>
+    <div id="queue-list"><div class="empty-state">Nenhum aluno na fila</div></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyB4xX1yhhO5HbJKN3A6XiZ2ncbQxXSpHOo",
+    authDomain: "banheiro-sala-3f4a3.firebaseapp.com",
+    databaseURL: "https://banheiro-sala-3f4a3-default-rtdb.firebaseio.com",
+    projectId: "banheiro-sala-3f4a3",
+    storageBucket: "banheiro-sala-3f4a3.firebasestorage.app",
+    messagingSenderId: "318843831948",
+    appId: "1:318843831948:web:782beabb242a563c739da9"
+  });
+
+  var db = firebase.database();
+  var stateRef = db.ref('sala/estado');
+  var myName = null;
+
+  function normalize(raw) {
+    var slots = [null, null];
+    var queue = [];
+    if (raw) {
+      if (raw.slots) {
+        slots[0] = raw.slots[0] !== undefined ? raw.slots[0] : null;
+        slots[1] = raw.slots[1] !== undefined ? raw.slots[1] : null;
+        if (slots[0] === false) slots[0] = null;
+        if (slots[1] === false) slots[1] = null;
+      }
+      if (raw.queue) {
+        if (Array.isArray(raw.queue)) {
+          queue = raw.queue.filter(function(n){ return n != null; });
+        } else {
+          queue = Object.values(raw.queue).filter(function(n){ return n != null; });
+        }
+      }
+    }
+    return { slots: slots, queue: queue };
+  }
+
+  function saveState(s, cb) {
+    stateRef.set({
+      slots: { 0: s.slots[0] || null, 1: s.slots[1] || null },
+      queue: s.queue
+    }, cb);
+  }
+
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function render(state) {
+    var slots = state.slots;
+    var queue = state.queue;
+
+    var occ = (slots[0] ? 1 : 0) + (slots[1] ? 1 : 0);
+    document.getElementById('slots-count').textContent = occ + ' / 2';
+
+    for (var i = 0; i < 2; i++) {
+      var el = document.getElementById('slot-' + i);
+      if (slots[i]) {
+        el.className = 'slot occupied';
+        el.innerHTML = '<div class="slot-icon">🚶</div><div class="slot-name">' + esc(slots[i]) + '</div><div class="slot-hint">no banheiro</div>';
+      } else {
+        el.className = 'slot empty';
+        el.innerHTML = '<div class="slot-icon">🚪</div><div class="slot-hint">Vaga livre</div>';
+      }
+    }
+
+    document.getElementById('queue-count').textContent = queue.length + ' na fila';
+    var qEl = document.getElementById('queue-list');
+    if (queue.length === 0) {
+      qEl.innerHTML = '<div class="empty-state">Nenhum aluno na fila</div>';
+    } else {
+      var html = '';
+      for (var j = 0; j < queue.length; j++) {
+        html += '<div class="queue-item"><span class="queue-pos">' + (j+1) + 'º</span><span class="queue-name">' + esc(queue[j]) + '</span><span class="badge-waiting">aguardando</span></div>';
+      }
+      qEl.innerHTML = html;
+    }
+
+    if (!myName) return;
+    var inSlot = (slots[0] === myName || slots[1] === myName);
+    var inQueue = queue.indexOf(myName) !== -1;
+    var div = document.getElementById('my-action');
+    if (inSlot) {
+      div.innerHTML = '<button class="btn btn-success btn-sm" id="btn-voltei">✓ Voltei!</button>';
+      document.getElementById('btn-voltei').onclick = voltei;
+    } else if (inQueue) {
+      div.innerHTML = '<button class="btn btn-sm" id="btn-sair">Sair da fila</button>';
+      document.getElementById('btn-sair').onclick = sairFila;
+    } else {
+      div.innerHTML = '<button class="btn btn-accent btn-sm" id="btn-ir">Ir ao banheiro</button>';
+      document.getElementById('btn-ir').onclick = irBanheiro;
+    }
+  }
+
+  stateRef.on('value', function(snap) {
+    render(normalize(snap.val()));
+  });
+
+  stateRef.once('value', function(snap) {
+    if (!snap.exists()) {
+      stateRef.set({ slots: { 0: null, 1: null }, queue: [] });
+    }
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('conn-dot').className = 'dot on';
+    document.getElementById('conn-label').textContent = 'ao vivo';
+  }, function() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('conn-label').textContent = 'erro';
+  });
+
+  function entrar() {
+    var nome = document.getElementById('name-input').value.trim();
+    if (!nome) return;
+    myName = nome;
+    document.getElementById('login-card').style.display = 'none';
+    document.getElementById('my-bar').style.display = 'flex';
+    document.getElementById('my-bar-name').textContent = myName;
+    stateRef.once('value', function(snap) { render(normalize(snap.val())); });
+  }
+
+  function irBanheiro() {
+    stateRef.once('value', function(snap) {
+      var s = normalize(snap.val());
+      if (s.slots[0] === myName || s.slots[1] === myName) return;
+      if (s.queue.indexOf(myName) !== -1) return;
+      if (!s.slots[0]) { s.slots[0] = myName; }
+      else if (!s.slots[1]) { s.slots[1] = myName; }
+      else { s.queue.push(myName); }
+      saveState(s);
+    });
+  }
+
+  function voltei() {
+    stateRef.once('value', function(snap) {
+      var s = normalize(snap.val());
+      var idx = -1;
+      if (s.slots[0] === myName) idx = 0;
+      else if (s.slots[1] === myName) idx = 1;
+      if (idx !== -1) {
+        s.slots[idx] = s.queue.length > 0 ? s.queue.shift() : null;
+        saveState(s);
+      }
+    });
+  }
+
+  function sairFila() {
+    stateRef.once('value', function(snap) {
+      var s = normalize(snap.val());
+      s.queue = s.queue.filter(function(n){ return n !== myName; });
+      saveState(s);
+    });
+  }
+
+  document.getElementById('btn-entrar').onclick = entrar;
+  document.getElementById('name-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') entrar();
+  });
+</script>
+</body>
+</html>
